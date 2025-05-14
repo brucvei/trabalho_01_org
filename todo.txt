@@ -1,6 +1,21 @@
-Este primeiro trabalho prático da disciplina de ELC1011 – Organização de Computadores visa aprofundar a compreensão da arquitetura MIPS através da implementação de um simulador educacionalpara um subconjunto específico de suas instruções. O desenvolvimento deste simulador em linguagem assembly para MIPS proporcionará uma visão detalhada do ciclo de execução de instruções e da interação entre os componentes de um processador. O trabalho poderá ser realizado individualmente ou em equipes de até dois alunos. A colaboração é encorajada para a troca de conhecimento e o desenvolvimento de soluções mais robustas. A entrega do trabalho será efetuada via Moodle, na data a ser definida em comum acordo, entre alunos e professor. Para a avaliação, cada equipe (ou aluno individual) deverá submeter um arquivo compactado no formato ZIP contendo:
- • Um relatório completo do trabalho em formato PDF, seguindo a estrutura padrão de trabalhos acadêmicos: introdução, objetivos (geral e específicos), revisão bibliográfica (conceitos relevantes para o simulador MIPS), metodologia (detalhes da implementação do simulador), experimento (exemplos de testes realizados com o simulador), resultados (saídas do simulador para os testes), discussão (análise dos resultados e desafios encontrados), conclusões e perspectivas (aprendizados e possíveis extensões futuras).
- • Os arquivos-fonte dos programas desenvolvidos em linguagem assembly MIPS, devidamente organizados. O código-fonte deverá ser completo, funcional e apresentar uma organização clara, facilitando a análise e compreensão do seu funcionamento.
+Este primeiro trabalho prático da disciplina de ELC1011 – Organização de Computadores visa aprofundar a compreensão
+da arquitetura MIPS através da implementação de um simulador educacionalpara um subconjunto específico de suas instruções.
+O desenvolvimento deste simulador em linguagem assembly para MIPS proporcionará uma visão detalhada do ciclo de execução de instruções
+e da interação entre os componentes de um processador. O trabalho poderá ser realizado individualmente ou em equipes de até dois alunos.
+A colaboração é encorajada para a troca de conhecimento e o desenvolvimento de soluções mais robustas. A entrega do trabalho será efetuada
+via Moodle, na data a ser definida em comum acordo, entre alunos e professor. Para a avaliação, cada equipe (ou aluno individual) deverá
+submeter um arquivo compactado no formato ZIP contendo:
+ • Um relatório completo do trabalho em formato PDF, seguindo a estrutura padrão de trabalhos acadêmicos:
+ introdução,
+ objetivos (geral e específicos),
+ revisão bibliográfica (conceitos relevantes para o simulador MIPS),
+ metodologia (detalhes da implementação do simulador),
+ experimento (exemplos de testes realizados com o simulador),
+ resultados (saídas do simulador para os testes),
+ discussão (análise dos resultados e desafios encontrados),
+ conclusões e perspectivas (aprendizados e possíveis extensões futuras).
+ • Os arquivos-fonte dos programas desenvolvidos em linguagem assembly MIPS, devidamente organizados.
+ O código-fonte deverá ser completo, funcional e apresentar uma organização clara, facilitando a análise e compreensão do seu funcionamento.
 
 Para a implementação do simulador, serão utilizadas as seguintes estruturas de dados para modelar a arquitetura MIPS:
 1. reg: Um vetor de 32 elementos (indexados de 0 a 31), do tipo inteiro de 32 bits, representando o banco de registradores de propósito geral do MIPS. O registrador $0 (índice 0) deve sempre retornar o valor zero.
@@ -27,8 +42,8 @@ O subconjunto inicial de instruções MIPS a ser implementado inclui (mas não s
 • Transferência de Dados: lw, sw.
 • Desvios: beq, bne, j.
 • Outras: sll, srl, syscall.
-A lista completa e detalhada das instruções suportadas, incluindo seus formatos e funcionalidades, depende das instruções presentes no programa simulado no arquivo binário trabalho_01-2025_1.bin. Os arquivos trabalho_01-2025_1.bin,trabalho_01-2025_1.dat e trabalho_01-2025_1.asm estarão disponíveis no Moodle até 11/04/2025, na pasta ’arquivos de entrada’. O arquivo .asm contém o código fonte do programa em assembly que foi utilizado para gerar os arquivos binários, servindo como referência para entender o programa a ser simulado.
-O professor fornecerá suporte contínuo durante o desenvolvimento do trabalho, tanto em sala de aula quanto online. O documento deajuda (FAQ)seráumafonteimportante deinformações e será atualizado regularmente com as dúvidas mais frequentes. Para questões não abordadas no FAQ, utilizemos canais de comunicação (Moodle ou fórum).
+A lista completa e detalhada das instruções suportadas, incluindo seus formatos e funcionalidades, depende das instruções presentes no programa simulado no arquivo binário trabalho_01-2025_1.bin. Os arquivos trabalho_01-2025_1.bin, trabalho_01-2025_1.dat e trabalho_01-2025_1.asm estarão disponíveis no Moodle até 11/04/2025, na pasta ’arquivos de entrada’. O arquivo .asm contém o código fonte do programa em assembly que foi utilizado para gerar os arquivos binários, servindo como referência para entender o programa a ser simulado.
+O professor fornecerá suporte contínuo durante o desenvolvimento do trabalho, tanto em sala de aula quanto online. O documento de ajuda (FAQ) será uma fonte importante de informações e será atualizado regularmente com as dúvidas mais frequentes. Para questões não abordadas no FAQ, utilizemos canais de comunicação (Moodle ou fórum).
 Como ponto de partida, elaborem as especificações detalhadas do projeto, o fluxograma do simulador em assembly MIPS, a metodologia de implementação, um cronograma de desenvolvimento e uma lista inicial com as dúvidas do trabalho.
 No dia 11/04/2025, discutiremos o trabalho e definiremos os prazos finais para a entrega do simulador e do relatório. Este trabalho é uma oportunidade valiosa para aplicar os conhecimentos teóricos da disciplina e desenvolver habilidades práticas em organização de computadores
 
