@@ -87,9 +87,314 @@ init_regs:
         li $v0, 4
         syscall
 
-        # Finaliza o programa
+        # Loop de execução de instruções
+exec_loop:
+        # Busca: IR = mem_text[(PC - 0x00400000) >> 2]
+        lw $t0, PC
+        li $t1, 0x00400000
+        subu $t2, $t0, $t1
+        srl $t2, $t2, 2
+        la $t3, mem_text
+        sll $t4, $t2, 2
+        addu $t3, $t3, $t4
+        lw $t5, 0($t3)
+        sw $t5, IR
+
+        # Decodificação dos campos da instrução
+        lw $t6, IR
+        srl $t7, $t6, 26         # opcode = IR[31:26]
+        andi $t7, $t7, 0x3F
+        move $s3, $t7            # $s3 = opcode
+
+        srl $t8, $t6, 21         # rs = IR[25:21]
+        andi $t8, $t8, 0x1F
+        move $s4, $t8            # $s4 = rs
+
+        srl $t9, $t6, 16         # rt = IR[20:16]
+        andi $t9, $t9, 0x1F
+        move $s5, $t9            # $s5 = rt
+
+        srl $a3, $t6, 11         # rd = IR[15:11]
+        andi $a3, $a3, 0x1F
+        move $s6, $a3            # $s6 = rd
+
+        srl $a2, $t6, 6          # shamt = IR[10:6]
+        andi $a2, $a2, 0x1F
+        move $s7, $a2            # $s7 = shamt
+
+        andi $a1, $t6, 0x3F      # funct = IR[5:0]
+        move $t0, $a1            # $t0 = funct
+
+        andi $a0, $t6, 0xFFFF    # immediate = IR[15:0]
+        move $t1, $a0            # $t1 = immediate
+
+        andi $t2, $t6, 0x3FFFFFF # address = IR[25:0]
+        move $t2, $t2            # $t2 = address
+
+        # Incrementa PC
+        lw $t3, PC
+        addiu $t3, $t3, 4
+        sw $t3, PC
+
+        # Decisão de instrução
+        beqz $s3, tipoR          # opcode == 0 -> tipo R
+        li $t4, 2
+        beq $s3, $t4, tipoJ      # opcode == 2 -> j
+        li $t4, 3
+        beq $s3, $t4, tipoJ      # opcode == 3 -> jal (não implementado, só exemplo)
+        li $t4, 4
+        beq $s3, $t4, beq_inst   # opcode == 4 -> beq
+        li $t4, 5
+        beq $s3, $t4, bne_inst   # opcode == 5 -> bne
+        li $t4, 8
+        beq $s3, $t4, addi_inst  # opcode == 8 -> addi
+        li $t4, 12
+        beq $s3, $t4, andi_inst  # opcode == 12 -> andi
+        li $t4, 13
+        beq $s3, $t4, ori_inst   # opcode == 13 -> ori
+        li $t4, 35
+        beq $s3, $t4, lw_inst    # opcode == 35 -> lw
+        li $t4, 43
+        beq $s3, $t4, sw_inst    # opcode == 43 -> sw
+        j exec_loop              # instrução não suportada, ignora
+
+tipoR:
+        # Funct: add=32, sub=34, and=36, or=37, sll=0, srl=2, syscall=12
+        li $t4, 32
+        beq $t0, $t4, add_inst
+        li $t4, 34
+        beq $t0, $t4, sub_inst
+        li $t4, 36
+        beq $t0, $t4, and_inst
+        li $t4, 37
+        beq $t0, $t4, or_inst
+        li $t4, 0
+        beq $t0, $t4, sll_inst
+        li $t4, 2
+        beq $t0, $t4, srl_inst
+        li $t4, 12
+        beq $t0, $t4, syscall_inst
+        j exec_loop
+
+add_inst:
+        # reg[rd] = reg[rs] + reg[rt]
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)           # reg[rs]
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        lw $t5, 0($t3)           # reg[rt]
+        add $t6, $t4, $t5
+        sll $t2, $s6, 2
+        addu $t3, $t1, $t2
+        sw $t6, 0($t3)           # reg[rd]
+        j exec_loop
+
+sub_inst:
+        # reg[rd] = reg[rs] - reg[rt]
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)           # reg[rs]
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        lw $t5, 0($t3)           # reg[rt]
+        sub $t6, $t4, $t5
+        sll $t2, $s6, 2
+        addu $t3, $t1, $t2
+        sw $t6, 0($t3)           # reg[rd]
+        j exec_loop
+
+and_inst:
+        # reg[rd] = reg[rs] & reg[rt]
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        lw $t5, 0($t3)
+        and $t6, $t4, $t5
+        sll $t2, $s6, 2
+        addu $t3, $t1, $t2
+        sw $t6, 0($t3)
+        j exec_loop
+
+or_inst:
+        # reg[rd] = reg[rs] | reg[rt]
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        lw $t5, 0($t3)
+        or $t6, $t4, $t5
+        sll $t2, $s6, 2
+        addu $t3, $t1, $t2
+        sw $t6, 0($t3)
+        j exec_loop
+
+sll_inst:
+        # reg[rd] = reg[rt] << shamt
+        la $t1, reg
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        sllv $t5, $t4, $s7
+        sll $t2, $s6, 2
+        addu $t3, $t1, $t2
+        sw $t5, 0($t3)
+        j exec_loop
+
+srl_inst:
+        # reg[rd] = reg[rt] >> shamt
+        la $t1, reg
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        srlv $t5, $t4, $s7
+        sll $t2, $s6, 2
+        addu $t3, $t1, $t2
+        sw $t5, 0($t3)
+        j exec_loop
+
+syscall_inst:
+        # syscall: verifica código em reg[2] ($v0)
+        la $t1, reg
+        sll $t2, 2, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        li $t5, 1
+        beq $t4, $t5, exit1
+        li $t5, 10
+        beq $t4, $t5, exit2
+        j exec_loop
+
+exit1:
         li $v0, 10
         syscall
+
+exit2:
+        li $v0, 10
+        syscall
+
+tipoJ:
+        # j address
+        # PC = (PC & 0xF0000000) | (address << 2)
+        lw $t0, PC
+        andi $t1, $t0, 0xF0000000
+        sll $t2, $t2, 2
+        or $t3, $t1, $t2
+        sw $t3, PC
+        j exec_loop
+
+beq_inst:
+        # if reg[rs] == reg[rt] PC += (immediate << 2)
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        lw $t5, 0($t3)
+        bne $t4, $t5, exec_loop
+        lw $t6, PC
+        sll $t7, $t1, 2
+        add $t6, $t6, $t7
+        sw $t6, PC
+        j exec_loop
+
+bne_inst:
+        # if reg[rs] != reg[rt] PC += (immediate << 2)
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        lw $t5, 0($t3)
+        beq $t4, $t5, exec_loop
+        lw $t6, PC
+        sll $t7, $t1, 2
+        add $t6, $t6, $t7
+        sw $t6, PC
+        j exec_loop
+
+addi_inst:
+        # reg[rt] = reg[rs] + immediate
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        add $t5, $t4, $t1
+        sw $t5, 0($t3)
+        j exec_loop
+
+andi_inst:
+        # reg[rt] = reg[rs] & immediate
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        and $t5, $t4, $t1
+        sw $t5, 0($t3)
+        j exec_loop
+
+ori_inst:
+        # reg[rt] = reg[rs] | immediate
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        or $t5, $t4, $t1
+        sw $t5, 0($t3)
+        j exec_loop
+
+lw_inst:
+        # reg[rt] = mem_data[(reg[rs] + immediate - 0x10010000) >> 2]
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)           # reg[rs]
+        add $t5, $t4, $t1        # reg[rs] + immediate
+        li $t6, 0x10010000
+        subu $t7, $t5, $t6
+        srl $t7, $t7, 2
+        la $t8, mem_data
+        sll $t9, $t7, 2
+        addu $t8, $t8, $t9
+        lw $s0, 0($t8)
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        sw $s0, 0($t3)
+        j exec_loop
+
+sw_inst:
+        # mem_data[(reg[rs] + immediate - 0x10010000) >> 2] = reg[rt]
+        la $t1, reg
+        sll $t2, $s4, 2
+        addu $t3, $t1, $t2
+        lw $t4, 0($t3)           # reg[rs]
+        add $t5, $t4, $t1        # reg[rs] + immediate
+        li $t6, 0x10010000
+        subu $t7, $t5, $t6
+        srl $t7, $t7, 2
+        la $t8, mem_data
+        sll $t9, $t7, 2
+        addu $t8, $t8, $t9
+        sll $t2, $s5, 2
+        addu $t3, $t1, $t2
+        lw $s0, 0($t3)
+        sw $s0, 0($t8)
+        j exec_loop
 
 file_error:
         la $a0, err_file
