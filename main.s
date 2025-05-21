@@ -263,20 +263,24 @@ srl_inst:
 syscall_inst:
         # syscall: verifica código em reg[2] ($v0)
         la $t1, reg
-        sll $t2, 2, 2
+        li $t2, 2
+        sll $t2, $t2, 2
         addu $t3, $t1, $t2
         lw $t4, 0($t3)
         li $t5, 1
-        beq $t4, $t5, exit1
+        beq $t4, $t5, exit1      # exit (código 1)
         li $t5, 10
-        beq $t4, $t5, exit2
+        beq $t4, $t5, exit2      # exit2 (código 10)
+        # Outros serviços podem ser implementados aqui futuramente
         j exec_loop
 
 exit1:
+        # Serviço de saída (exit)
         li $v0, 10
         syscall
 
 exit2:
+        # Serviço de saída (exit2)
         li $v0, 10
         syscall
 
