@@ -4,12 +4,18 @@ msg_done:   .asciiz "Simulador inicializado com sucesso.\n"
 msg_pc_sp:  .asciiz "PC: 0x%08X, SP: 0x%08X\n"
 msg_load_text: .asciiz "Carregando instruções do arquivo binário...\n"
 msg_load_data: .asciiz "Carregando dados do arquivo binário...\n"
-filename_text: .asciiz "ex-000-073.bin"
-filename_data: .asciiz "ex-000-073.dat"
+filename_text: .asciiz "C:/Users/Bruna/Documents/organizacao-de-computadores/trabalho-01/ex-000-073.bin"
+filename_data: .asciiz "C:/Users/Bruna/Documents/organizacao-de-computadores/trabalho-01/ex-000-073.dat"
 err_file:   .asciiz "Erro ao abrir arquivo binário.\n"
+err_open_text: .asciiz "ABRINDO TEXTO \n"
+err_read_text: .asciiz "LENDO TEXTO \n"
+err_open_data: .asciiz "ABRINDO DADOS \n"
+err_read_data: .asciiz "LENDO DADOS \n"
+err_close:     .asciiz "FECHANDO ARQUIVO \n"
 
         .text
         .globl main
+        .ent main
 
 main:
         # Imprime mensagem de inicialização
@@ -43,11 +49,15 @@ init_regs:
         li $v0, 4
         syscall
 
+        # Mostra o nome do arquivo que será aberto
+        la $a0, filename_text
+        li $v0, 4
+        syscall
+
         la $a0, filename_text      # nome do arquivo
         li $a1, 0                  # modo leitura
         li $v0, 13                 # syscall open
         syscall
-        bltz $v0, file_error
         move $s0, $v0              # descritor do arquivo
 
         la $a1, mem_text           # buffer destino
@@ -69,7 +79,6 @@ init_regs:
         li $a1, 0
         li $v0, 13                 # syscall open
         syscall
-        bltz $v0, file_error
         move $s0, $v0
 
         la $a1, mem_data
@@ -128,7 +137,8 @@ exec_loop:
         andi $a0, $t6, 0xFFFF    # immediate = IR[15:0]
         move $t1, $a0            # $t1 = immediate
 
-        andi $t2, $t6, 0x3FFFFFF # address = IR[25:0]
+        li $t3, 0x03FFFFFF       # address = IR[25:0]
+        and $t2, $t6, $t3
         move $t2, $t2            # $t2 = address
 
         # Incrementa PC
@@ -271,7 +281,6 @@ syscall_inst:
         beq $t4, $t5, exit1      # exit (código 1)
         li $t5, 10
         beq $t4, $t5, exit2      # exit2 (código 10)
-        # Outros serviços podem ser implementados aqui futuramente
         j exec_loop
 
 exit1:
@@ -288,7 +297,8 @@ tipoJ:
         # j address
         # PC = (PC & 0xF0000000) | (address << 2)
         lw $t0, PC
-        andi $t1, $t0, 0xF0000000
+        li $t2, 0xF0000000
+        and $t1, $t0, $t2
         sll $t2, $t2, 2
         or $t3, $t1, $t2
         sw $t3, PC
@@ -327,78 +337,96 @@ bne_inst:
         j exec_loop
 
 addi_inst:
-        # reg[rt] = reg[rs] + immediate
-        la $t1, reg
-        sll $t2, $s4, 2
-        addu $t3, $t1, $t2
-        lw $t4, 0($t3)
-        sll $t2, $s5, 2
-        addu $t3, $t1, $t2
-        add $t5, $t4, $t1
-        sw $t5, 0($t3)
-        j exec_loop
+		    # reg[rt] = reg[rs] + immediate (com sinal!)
+		    la $t1, reg
+		    sll $t2, $s4, 2         # rs offset
+		    addu $t3, $t1, $t2
+		    lw $t4, 0($t3)          # reg[rs]
+
+		    sll $t2, $s5, 2         # rt offset
+		    addu $t3, $t1, $t2
+
+		    # Extensão de sinal para imediato
+		    move $t7, $t1           # $t1 contém o imediato extraído
+		    sll $t5, $t7, 16
+		    sra $t5, $t5, 16        # $t5 = sign-extended immediate
+
+		    add $t6, $t4, $t5       # reg[rs] + imediato
+		    sw $t6, 0($t3)          # reg[rt] = resultado
+		    j exec_loop
+
+
 
 andi_inst:
-        # reg[rt] = reg[rs] & immediate
-        la $t1, reg
-        sll $t2, $s4, 2
-        addu $t3, $t1, $t2
-        lw $t4, 0($t3)
-        sll $t2, $s5, 2
-        addu $t3, $t1, $t2
-        and $t5, $t4, $t1
-        sw $t5, 0($t3)
-        j exec_loop
+		    # reg[rt] = reg[rs] & immediate (zero-extended)
+		    la $t1, reg
+		    sll $t2, $s4, 2
+		    addu $t3, $t1, $t2
+		    lw $t4, 0($t3)           # reg[rs]
+
+		    sll $t2, $s5, 2
+		    addu $t3, $t1, $t2
+		    andi $t5, $t1, 0xFFFF    # zero-extensão automática
+		    and $t6, $t4, $t5
+		    sw $t6, 0($t3)
+		    j exec_loop
 
 ori_inst:
-        # reg[rt] = reg[rs] | immediate
-        la $t1, reg
-        sll $t2, $s4, 2
-        addu $t3, $t1, $t2
-        lw $t4, 0($t3)
-        sll $t2, $s5, 2
-        addu $t3, $t1, $t2
-        or $t5, $t4, $t1
-        sw $t5, 0($t3)
-        j exec_loop
+		    # reg[rt] = reg[rs] | immediate (zero-extended)
+		    la $t1, reg
+		    sll $t2, $s4, 2
+		    addu $t3, $t1, $t2
+		    lw $t4, 0($t3)
+
+		    sll $t2, $s5, 2
+		    addu $t3, $t1, $t2
+		    ori $t5, $t1, 0xFFFF     # zero-extensão automática
+		    or $t6, $t4, $t5
+		    sw $t6, 0($t3)
+		    j exec_loop
 
 lw_inst:
-        # reg[rt] = mem_data[(reg[rs] + immediate - 0x10010000) >> 2]
-        la $t1, reg
-        sll $t2, $s4, 2
-        addu $t3, $t1, $t2
-        lw $t4, 0($t3)           # reg[rs]
-        add $t5, $t4, $t1        # reg[rs] + immediate
-        li $t6, 0x10010000
-        subu $t7, $t5, $t6
-        srl $t7, $t7, 2
-        la $t8, mem_data
-        sll $t9, $t7, 2
-        addu $t8, $t8, $t9
-        lw $s0, 0($t8)
-        sll $t2, $s5, 2
-        addu $t3, $t1, $t2
-        sw $s0, 0($t3)
-        j exec_loop
+        # reg[rt] = mem_data[reg[rs] + offset]
+		    la $t1, reg
+		    sll $t2, $s4, 2          # rs
+		    addu $t3, $t1, $t2
+		    lw $t4, 0($t3)           # base
+
+		    sll $t5, $t1, 16
+		    sra $t5, $t5, 16         # sign-extend immediate
+
+		    add $t6, $t4, $t5        # endereço efetivo
+		    la $t7, mem_data
+		    subu $t6, $t6, 0x10010000  # ajustar base
+		    addu $t7, $t7, $t6
+		    lw $t8, 0($t7)
+
+		    sll $t2, $s5, 2          # rt
+		    addu $t3, $t1, $t2
+		    sw $t8, 0($t3)
+		    j exec_loop
 
 sw_inst:
-        # mem_data[(reg[rs] + immediate - 0x10010000) >> 2] = reg[rt]
-        la $t1, reg
-        sll $t2, $s4, 2
-        addu $t3, $t1, $t2
-        lw $t4, 0($t3)           # reg[rs]
-        add $t5, $t4, $t1        # reg[rs] + immediate
-        li $t6, 0x10010000
-        subu $t7, $t5, $t6
-        srl $t7, $t7, 2
-        la $t8, mem_data
-        sll $t9, $t7, 2
-        addu $t8, $t8, $t9
-        sll $t2, $s5, 2
-        addu $t3, $t1, $t2
-        lw $s0, 0($t3)
-        sw $s0, 0($t8)
-        j exec_loop
+		    # mem_data[reg[rs] + offset] = reg[rt]
+		    la $t1, reg
+		    sll $t2, $s4, 2          # rs
+		    addu $t3, $t1, $t2
+		    lw $t4, 0($t3)
+
+		    sll $t5, $t1, 16
+		    sra $t5, $t5, 16         # sign-extend immediate
+
+		    add $t6, $t4, $t5        # endereço efetivo
+
+		    sll $t2, $s5, 2          # rt
+		    addu $t3, $t1, $t2
+		    lw $t7, 0($t3)           # valor a armazenar
+
+		    la $t8, mem_data
+		    subu $t6, $t6, 0x10010000
+		    addu $t8, $t8, $t6
+		    sw $t7, 0($t8)
+		    j exec_loop
 
 file_error:
         la $a0, err_file
@@ -411,5 +439,7 @@ file_error:
 reg:    .space 128  # 32 registradores de 4 bytes cada
 PC:     .word 0     # Contador de programa
 IR:     .word 0     # Registrador de instrução
-mem_text: .space 4096   # espaço para instruções (ajuste conforme necessário)
-mem_data: .space 4096   # espaço para dados (ajuste conforme necessário)
+mem_text: .space 4096   # espaço para instruções
+mem_data: .space 4096   # espaço para dados
+
+.end main
